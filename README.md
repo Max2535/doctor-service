@@ -1,30 +1,30 @@
 # doctor-service
 
-ตัวอย่างการเรียกใช้งาน REST API สำหรับโปรเจค `doctor-service` (ตัวอย่างสำหรับ `DoctorController` และ `PatientController`)
+Example usage for the `doctor-service` REST API (endpoints for `DoctorController` and `PatientController`).
 
-เริ่มต้นแอป (จากโฟลเดอร์โปรเจค):
+Start the application (run from project root):
 
 ```bash
 ./mvnw -DskipTests spring-boot:run
 ```
 
-ค่าเริ่มต้น: แอปจะรันที่ `http://localhost:8080`
+By default the app listens on `http://localhost:8080`.
 
-**ตัวอย่างการเรียกใช้งาน `DoctorController`**
+**DoctorController examples**
 
-- GET ทั้งหมด
+- GET all doctors
 
 ```bash
 curl http://localhost:8080/api/doctors
 ```
 
-- GET ตาม `id`
+- GET doctor by id
 
 ```bash
 curl http://localhost:8080/api/doctors/1
 ```
 
-- POST สร้าง doctor
+- POST create a new doctor
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -32,7 +32,7 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:8080/api/doctors
 ```
 
-- PUT อัปเดต doctor ทั้งหมด (replace)
+- PUT replace an existing doctor
 
 ```bash
 curl -X PUT -H "Content-Type: application/json" \
@@ -40,7 +40,7 @@ curl -X PUT -H "Content-Type: application/json" \
   http://localhost:8080/api/doctors/1
 ```
 
-- PATCH แก้บางฟิลด์
+- PATCH partially update a doctor
 
 ```bash
 curl -X PATCH -H "Content-Type: application/json" \
@@ -48,7 +48,7 @@ curl -X PATCH -H "Content-Type: application/json" \
   http://localhost:8080/api/doctors/1
 ```
 
-- DELETE
+- DELETE a doctor
 
 ```bash
 curl -X DELETE http://localhost:8080/api/doctors/1
@@ -56,23 +56,23 @@ curl -X DELETE http://localhost:8080/api/doctors/1
 
 ---
 
-**ตัวอย่างการเรียกใช้งาน `PatientController`**
+**PatientController examples**
 
-Controller ของ `Patient` ใช้ DTO + `ApiResponse<T>` wrapper ในการตอบผล ตัวอย่าง
+The Patient endpoints use DTOs and return responses wrapped in `ApiResponse<T>`.
 
-- GET ทั้งหมด
+- GET all patients
 
 ```bash
 curl http://localhost:8080/api/patients
 ```
 
-- GET ตาม `id`
+- GET patient by id
 
 ```bash
 curl http://localhost:8080/api/patients/1
 ```
 
-- POST สร้าง patient (dateOfBirth เป็นรูปแบบ ISO `yyyy-MM-dd`)
+- POST create a patient (use ISO date `yyyy-MM-dd` for `dateOfBirth`)
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -80,7 +80,7 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:8080/api/patients
 ```
 
-- PUT อัปเดต (replace)
+- PUT replace a patient
 
 ```bash
 curl -X PUT -H "Content-Type: application/json" \
@@ -88,7 +88,7 @@ curl -X PUT -H "Content-Type: application/json" \
   http://localhost:8080/api/patients/1
 ```
 
-- PATCH แก้บางฟิลด์
+- PATCH partially update a patient
 
 ```bash
 curl -X PATCH -H "Content-Type: application/json" \
@@ -96,7 +96,7 @@ curl -X PATCH -H "Content-Type: application/json" \
   http://localhost:8080/api/patients/1
 ```
 
-- DELETE
+- DELETE a patient
 
 ```bash
 curl -X DELETE http://localhost:8080/api/patients/1
@@ -104,7 +104,7 @@ curl -X DELETE http://localhost:8080/api/patients/1
 
 ---
 
-ตัวอย่างการตอบกลับสำหรับ `Patient` จะถูกห่อด้วย `ApiResponse<T>` เช่น:
+Example `ApiResponse` payload returned by Patient endpoints:
 
 ```json
 {
@@ -124,4 +124,4 @@ curl -X DELETE http://localhost:8080/api/patients/1
 }
 ```
 
-ถ้าต้องการ ผมสามารถเพิ่มตัวอย่างการเรียกผ่าน `httpie`, Postman collection, หรือเพิ่มตัวอย่าง response ของ `DoctorController` ได้ด้วยครับ
+If you want, I can also add examples for `httpie`, a Postman collection, or example responses for the `DoctorController`.
