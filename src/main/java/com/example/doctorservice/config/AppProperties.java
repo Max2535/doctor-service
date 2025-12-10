@@ -27,6 +27,18 @@ public class AppProperties {
         public String getFrom() {
             return from;
         }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public void setFrom(String from) {
+            this.from = from;
+        }
     }
 
     public static class Admin {
@@ -38,6 +50,13 @@ public class AppProperties {
         }
         public String getName() {
             return name;
+        }
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public void setName(String name) {
+            this.name = name;
         }
     }
 

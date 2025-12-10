@@ -1,9 +1,14 @@
 package com.example.doctorservice.service;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.doctorservice.config.AppProperties;
+import com.example.doctorservice.model.Doctor;
+import com.example.doctorservice.repository.DoctorRepository;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -13,12 +18,113 @@ public class DoctorService {
 
     private final AppProperties appProperties;
     private final EmailService emailService;
+    private final DoctorRepository doctorRepository;
 
     @Autowired
     public DoctorService(AppProperties appProperties,
-                        EmailService emailService) {
+            EmailService emailService,
+            DoctorRepository doctorRepository) {
         this.appProperties = appProperties;
         this.emailService = emailService;
+        this.doctorRepository = doctorRepository;
+    }
+
+    // Get all doctors
+    public List<Doctor> getAllDoctors() {
+        return doctorRepository.findAll();
+    }
+
+    // Get doctor by ID
+    public Optional<Doctor> getDoctorById(Long id) {
+        return doctorRepository.findById(id);
+    }
+
+    // Get doctors by specialization
+    public List<Doctor> getDoctorsBySpecialization(String specialization) {
+        return doctorRepository.findBySpecialization(specialization);
+    }
+
+    // Get active doctors
+    public List<Doctor> getActiveDoctors() {
+        return doctorRepository.findByActive(true);
+    }
+
+    // Search doctors by name
+    public List<Doctor> searchDoctors(String name) {
+        return doctorRepository.searchByName(name);
+    }
+
+    // Create new doctor
+    public Doctor createDoctor(Doctor doctor) {
+        // Business validation
+        if (doctor.getFirstName() == null || doctor.getFirstName().isBlank()) {
+            throw new IllegalArgumentException("First name is required");
+        }
+        if (doctor.getLastName() == null || doctor.getLastName().isBlank()) {
+            throw new IllegalArgumentException("Last name is required");
+        }
+        if (doctor.getSpecialization() == null || doctor.getSpecialization().isBlank()) {
+            throw new IllegalArgumentException("Specialization is required");
+        }
+
+        // Check duplicate email
+        if (doctor.getEmail() != null &&
+                doctorRepository.existsByEmail(doctor.getEmail())) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+
+        return doctorRepository.save(doctor);
+    }
+
+    // Update existing doctor
+    public Doctor updateDoctor(Long id, Doctor updatedDoctor) {
+        Doctor existingDoctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Doctor not found with id: " + id));
+
+        // Update fields
+        if (updatedDoctor.getFirstName() != null) {
+            existingDoctor.setFirstName(updatedDoctor.getFirstName());
+        }
+        if (updatedDoctor.getLastName() != null) {
+            existingDoctor.setLastName(updatedDoctor.getLastName());
+        }
+        if (updatedDoctor.getSpecialization() != null) {
+            existingDoctor.setSpecialization(updatedDoctor.getSpecialization());
+        }
+        if (updatedDoctor.getEmail() != null) {
+            existingDoctor.setEmail(updatedDoctor.getEmail());
+        }
+        if (updatedDoctor.getPhone() != null) {
+            existingDoctor.setPhone(updatedDoctor.getPhone());
+        }
+
+        return doctorRepository.save(existingDoctor);
+    }
+
+    // Partially update doctor (PATCH)
+    public Doctor patchDoctor(Long id, Doctor partialDoctor) {
+        return updateDoctor(id, partialDoctor); // Same logic for this example
+    }
+
+    // Delete doctor
+    public void deleteDoctor(Long id) {
+        if (!doctorRepository.existsById(id)) {
+            throw new RuntimeException("Doctor not found with id: " + id);
+        }
+        doctorRepository.deleteById(id);
+    }
+
+    // Soft delete (deactivate)
+    public Doctor deactivateDoctor(Long id) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Doctor not found with id: " + id));
+        doctor.setActive(false);
+        return doctorRepository.save(doctor);
+    }
+
+    // Get total count
+    public long getTotalCount() {
+        return doctorRepository.count();
     }
 
     @PostConstruct
@@ -33,10 +139,9 @@ public class DoctorService {
 
         if (appProperties.isEnableNotifications()) {
             emailService.sendNotification(
-                appProperties.getAdmin().getEmail(),
-                "New Doctor Registered",
-                "Doctor " + doctorName + " has been registered."
-            );
+                    appProperties.getAdmin().getEmail(),
+                    "New Doctor Registered",
+                    "Doctor " + doctorName + " has been registered.");
         }
     }
 
