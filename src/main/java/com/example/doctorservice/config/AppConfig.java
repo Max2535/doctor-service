@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 @Configuration
 public class AppConfig {
@@ -20,7 +21,9 @@ public class AppConfig {
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
-        // อื่นๆ configurations
+        // Serialize java.time types (e.g., LocalDate) as ISO-8601 strings
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // other configurations
         return mapper;
     }
 

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,18 +45,22 @@ public class DoctorController {
     // return ResponseEntity.ok(doctors);
     // }
     // produces: กำหนดว่า endpoint นี้ส่งข้อมูลประเภทไหนได้บ้าง
-    @GetMapping(produces = {
+        @GetMapping(produces = {
             MediaType.APPLICATION_JSON_VALUE,
             MediaType.APPLICATION_XML_VALUE
-    })
-    public ResponseEntity<List<Doctor>> getAllDoctors(
+        })
+        public ResponseEntity<Page<Doctor>> getAllDoctors(
             @RequestParam(required = false) String specialization,
             @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) String search
-    ) {
-        List<Doctor> doctors = doctorService.getAllDoctors(specialization, active, search);
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
+        ) {
+        Page<Doctor> doctors = doctorService.getAllDoctors(specialization, active, search, page, size, sortBy, sortDir);
         return ResponseEntity.ok(doctors);
-    }
+        }
 
     /**
      * GET /api/doctors/{id}

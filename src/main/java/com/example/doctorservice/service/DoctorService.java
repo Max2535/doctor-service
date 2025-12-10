@@ -3,6 +3,9 @@ package com.example.doctorservice.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -56,6 +59,74 @@ public class DoctorService {
                     return false;
                 })
                 .collect(Collectors.toList());
+    }
+
+    // Get all doctors with optional filtering and pagination
+    public Page<Doctor> getAllDoctors(String specialization, Boolean active, String search, int page, int size) {
+        List<Doctor> filtered = getAllDoctors(specialization, active, search);
+        int total = filtered.size();
+        int fromIndex = Math.min(page * size, total);
+        int toIndex = Math.min(fromIndex + size, total);
+        List<Doctor> pageContent = filtered.subList(fromIndex, toIndex);
+        return new PageImpl<>(pageContent, PageRequest.of(page, size), total);
+    }
+
+    // Get all doctors with optional filtering, sorting and pagination
+    public Page<Doctor> getAllDoctors(String specialization, Boolean active, String search, int page, int size, String sortBy, String sortDir) {
+        List<Doctor> filtered = getAllDoctors(specialization, active, search);
+
+        // Sorting
+        java.util.Comparator<Doctor> comparator = (d1, d2) -> 0;
+        String key = (sortBy == null) ? "id" : sortBy.toLowerCase();
+        boolean asc = sortDir == null || !sortDir.equalsIgnoreCase("desc");
+
+        switch (key) {
+            case "firstname":
+            case "firstName":
+            case "first_name":
+                comparator = java.util.Comparator.comparing(d -> nullableLower(d.getFirstName()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "lastname":
+            case "lastName":
+            case "last_name":
+                comparator = java.util.Comparator.comparing(d -> nullableLower(d.getLastName()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "specialization":
+                comparator = java.util.Comparator.comparing(d -> nullableLower(d.getSpecialization()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "email":
+                comparator = java.util.Comparator.comparing(d -> nullableLower(d.getEmail()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "joineddate":
+            case "joined_date":
+            case "joinedDate":
+                comparator = java.util.Comparator.comparing(Doctor::getJoinedDate, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "active":
+                comparator = java.util.Comparator.comparing(Doctor::isActive, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "id":
+            default:
+                comparator = java.util.Comparator.comparing(Doctor::getId, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+        }
+
+        if (!asc) {
+            comparator = comparator.reversed();
+        }
+
+        filtered.sort(comparator);
+
+        // Pagination
+        int total = filtered.size();
+        int fromIndex = Math.min(page * size, total);
+        int toIndex = Math.min(fromIndex + size, total);
+        List<Doctor> pageContent = filtered.subList(fromIndex, toIndex);
+        return new PageImpl<>(pageContent, PageRequest.of(page, size), total);
+    }
+
+    private String nullableLower(String s) {
+        return s == null ? "" : s.toLowerCase();
     }
 
     // Get doctor by ID

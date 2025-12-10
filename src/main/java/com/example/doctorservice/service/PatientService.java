@@ -6,6 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 public class PatientService {
@@ -20,6 +24,56 @@ public class PatientService {
     public List<Patient> getAllPatients() {
         return patientRepository.findAll();
     }
+
+    // Get all patients with optional sorting and pagination
+    public Page<Patient> getAllPatients(int page, int size, String sortBy, String sortDir) {
+        List<Patient> all = patientRepository.findAll();
+
+        // Determine comparator
+        String key = (sortBy == null) ? "id" : sortBy.toLowerCase();
+        boolean asc = sortDir == null || !sortDir.equalsIgnoreCase("desc");
+
+        java.util.Comparator<Patient> comparator;
+        switch (key) {
+            case "firstname":
+            case "first_name":
+            case "firstName":
+                comparator = java.util.Comparator.comparing(p -> nullableLower(p.getFirstName()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "lastname":
+            case "last_name":
+            case "lastName":
+                comparator = java.util.Comparator.comparing(p -> nullableLower(p.getLastName()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "email":
+                comparator = java.util.Comparator.comparing(p -> nullableLower(p.getEmail()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "dateofbirth":
+            case "date_of_birth":
+            case "dateOfBirth":
+                comparator = java.util.Comparator.comparing(Patient::getDateOfBirth, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "gender":
+                comparator = java.util.Comparator.comparing(p -> nullableLower(p.getGender()), java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+            case "id":
+            default:
+                comparator = java.util.Comparator.comparing(Patient::getId, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+                break;
+        }
+
+        if (!asc) comparator = comparator.reversed();
+
+        all.sort(comparator);
+
+        int total = all.size();
+        int fromIndex = Math.min(page * size, total);
+        int toIndex = Math.min(fromIndex + size, total);
+        List<Patient> content = all.subList(fromIndex, toIndex);
+        return new PageImpl<>(content, PageRequest.of(page, size), total);
+    }
+
+    private String nullableLower(String s) { return s == null ? "" : s.toLowerCase(); }
 
     public Patient getPatientById(Long id) {
         return patientRepository.findById(id).orElse(null);

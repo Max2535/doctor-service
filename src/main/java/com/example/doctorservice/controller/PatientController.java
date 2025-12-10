@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 
 import java.util.List;
 
@@ -28,9 +30,16 @@ public class PatientController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<List<PatientDTO>>> getAllPatients() {
-        List<PatientDTO> dtos = patientMapper.toDTOList(patientService.getAllPatients());
-        return ResponseEntity.ok(ApiResponse.success("Success", dtos));
+    public ResponseEntity<ApiResponse<Page<PatientDTO>>> getAllPatients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
+    ) {
+        Page<Patient> patients = patientService.getAllPatients(page, size, sortBy, sortDir);
+        List<PatientDTO> dtoContent = patientMapper.toDTOList(patients.getContent());
+        Page<PatientDTO> dtoPage = new PageImpl<>(dtoContent, patients.getPageable(), patients.getTotalElements());
+        return ResponseEntity.ok(ApiResponse.success("Success", dtoPage));
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)

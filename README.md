@@ -125,3 +125,38 @@ Example `ApiResponse` payload returned by Patient endpoints:
 ```
 
 If you want, I can also add examples for `httpie`, a Postman collection, or example responses for the `DoctorController`.
+
+## Filtering, Pagination and Sorting
+
+The `GET /api/doctors` endpoint supports filtering, pagination and sorting via query parameters:
+
+- `specialization` (optional) — filter by specialization (case-insensitive exact match)
+- `active` (optional) — filter by active status (`true` or `false`)
+- `search` (optional) — case-insensitive contains search across `firstName`, `lastName`, `email`, and `specialization`
+- `page` (optional, default `0`) — zero-based page index
+- `size` (optional, default `10`) — page size
+- `sortBy` (optional, default `id`) — field to sort by (`id`, `firstName`, `lastName`, `specialization`, `email`, `joinedDate`, `active`)
+- `sortDir` (optional, default `asc`) — `asc` or `desc`
+
+Examples:
+
+Get active cardiologists, page 0 size 5, sorted by `joinedDate` descending:
+
+```bash
+curl "http://localhost:8080/api/doctors?specialization=Cardiology&active=true&page=0&size=5&sortBy=joinedDate&sortDir=desc"
+```
+
+Simple search and sort by last name ascending:
+
+```bash
+curl "http://localhost:8080/api/doctors?search=smith&sortBy=lastName&sortDir=asc"
+```
+
+The `GET /api/patients` endpoint also supports pagination and sorting with the same `page`, `size`, `sortBy`, and `sortDir` parameters. The response returns a paged `ApiResponse` containing a `Page<PatientDTO>` in the `data` field.
+
+## Notes
+
+- Filtering, sorting and pagination are currently applied in-memory by the repository/service layer because this project uses an in-memory repository. When moving to a database (e.g., Spring Data JPA), push these operations down to the database for better performance.
+- Dates use ISO-8601 (e.g., `"2020-01-15"`) for `LocalDate` fields.
+
+If you want, I can add Postman examples, integrate Swagger/OpenAPI, or update `DoctorV2Controller`/`DoctorV3Controller` to expose identical query parameters.
