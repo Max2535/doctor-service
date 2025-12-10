@@ -48,8 +48,12 @@ public class DoctorController {
             MediaType.APPLICATION_JSON_VALUE,
             MediaType.APPLICATION_XML_VALUE
     })
-    public ResponseEntity<List<Doctor>> getAllDoctors() {
-        List<Doctor> doctors = doctorService.getAllDoctors();
+    public ResponseEntity<List<Doctor>> getAllDoctors(
+            @RequestParam(required = false) String specialization,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String search
+    ) {
+        List<Doctor> doctors = doctorService.getAllDoctors(specialization, active, search);
         return ResponseEntity.ok(doctors);
     }
 

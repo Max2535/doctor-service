@@ -2,6 +2,7 @@ package com.example.doctorservice.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,29 @@ public class DoctorService {
     // Get all doctors
     public List<Doctor> getAllDoctors() {
         return doctorRepository.findAll();
+    }
+
+    // Get all doctors with optional filtering
+    public List<Doctor> getAllDoctors(String specialization, Boolean active, String search) {
+        return doctorRepository.findAll().stream()
+                .filter(d -> {
+                    if (specialization == null || specialization.isBlank()) return true;
+                    return d.getSpecialization() != null && d.getSpecialization().equalsIgnoreCase(specialization);
+                })
+                .filter(d -> {
+                    if (active == null) return true;
+                    return d.isActive() == active;
+                })
+                .filter(d -> {
+                    if (search == null || search.isBlank()) return true;
+                    String term = search.toLowerCase();
+                    if (d.getFirstName() != null && d.getFirstName().toLowerCase().contains(term)) return true;
+                    if (d.getLastName() != null && d.getLastName().toLowerCase().contains(term)) return true;
+                    if (d.getEmail() != null && d.getEmail().toLowerCase().contains(term)) return true;
+                    if (d.getSpecialization() != null && d.getSpecialization().toLowerCase().contains(term)) return true;
+                    return false;
+                })
+                .collect(Collectors.toList());
     }
 
     // Get doctor by ID
