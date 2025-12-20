@@ -1,116 +1,112 @@
 package com.example.doctorservice.repository;
 
-import com.example.doctorservice.model.Doctor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.example.doctorservice.entity.Doctor;
+
 import java.time.LocalDate;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
-public class DoctorRepository {
+public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
-    // In-memory storage (จะเปลี่ยนเป็น Database ใน Week 2)
-    private final Map<Long, Doctor> doctors = new ConcurrentHashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    // ============================================
+    // Query Methods (Spring Data JPA จะ generate SQL ให้)
+    // ============================================
 
-    // Constructor - สร้างข้อมูลตัวอย่าง
-    public DoctorRepository() {
-        initializeSampleData();
-    }
+    // Find by email
+    Optional<Doctor> findByEmail(String email);
 
-    private void initializeSampleData() {
-        Doctor d1 = new Doctor(idGenerator.getAndIncrement(),
-                "John", "Smith", "Cardiology");
-        d1.setEmail("john.smith@hospital.com");
-        d1.setPhone("081-234-5678");
-        d1.setJoinedDate(LocalDate.of(2020, 1, 15));
-        doctors.put(d1.getId(), d1);
-
-        Doctor d2 = new Doctor(idGenerator.getAndIncrement(),
-                "Sarah", "Johnson", "Neurology");
-        d2.setEmail("sarah.j@hospital.com");
-        d2.setPhone("082-345-6789");
-        d2.setJoinedDate(LocalDate.of(2019, 5, 20));
-        doctors.put(d2.getId(), d2);
-
-        Doctor d3 = new Doctor(idGenerator.getAndIncrement(),
-                "Michael", "Brown", "Pediatrics");
-        d3.setEmail("michael.b@hospital.com");
-        d3.setPhone("083-456-7890");
-        d3.setJoinedDate(LocalDate.of(2021, 3, 10));
-        doctors.put(d3.getId(), d3);
-    }
-
-    // Find all
-    public List<Doctor> findAll() {
-        return new ArrayList<>(doctors.values());
-    }
-
-    // Find by ID
-    public Optional<Doctor> findById(Long id) {
-        return Optional.ofNullable(doctors.get(id));
-    }
+    // Find by license number
+    Optional<Doctor> findByLicenseNumber(String licenseNumber);
 
     // Find by specialization
-    public List<Doctor> findBySpecialization(String specialization) {
-        return doctors.values().stream()
-                .filter(d -> d.getSpecialization()
-                        .equalsIgnoreCase(specialization))
-                .collect(Collectors.toList());
-    }
+    List<Doctor> findBySpecialization(String specialization);
 
     // Find by active status
-    public List<Doctor> findByActive(boolean active) {
-        return doctors.values().stream()
-                .filter(d -> d.isActive() == active)
-                .collect(Collectors.toList());
-    }
+    List<Doctor> findByActive(Boolean active);
 
-    // Search by name (firstName or lastName contains)
-    public List<Doctor> searchByName(String name) {
-        String searchTerm = name.toLowerCase();
-        return doctors.values().stream()
-                .filter(d -> d.getFirstName().toLowerCase().contains(searchTerm) ||
-                           d.getLastName().toLowerCase().contains(searchTerm))
-                .collect(Collectors.toList());
-    }
+    // Find by specialization and active
+    List<Doctor> findBySpecializationAndActive(String specialization, Boolean active);
 
-    // Save (create or update)
-    public Doctor save(Doctor doctor) {
-        if (doctor.getId() == null) {
-            // Create new
-            doctor.setId(idGenerator.getAndIncrement());
-        }
-        doctors.put(doctor.getId(), doctor);
-        return doctor;
-    }
+    // Find by first name or last name (case insensitive)
+    List<Doctor> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+            String firstName, String lastName);
 
-    // Delete by ID
-    public boolean deleteById(Long id) {
-        return doctors.remove(id) != null;
-    }
+    // Find by years of experience greater than
+    List<Doctor> findByYearsOfExperienceGreaterThan(Integer years);
 
-    // Check if exists by ID
-    public boolean existsById(Long id) {
-        return doctors.containsKey(id);
-    }
+    // Find by consultation fee between
+    List<Doctor> findByConsultationFeeBetween(Double minFee, Double maxFee);
+
+    // Find by joined date after
+    List<Doctor> findByJoinedDateAfter(LocalDate date);
 
     // Check if email exists
-    public boolean existsByEmail(String email) {
-        return doctors.values().stream()
-                .anyMatch(d -> d.getEmail().equalsIgnoreCase(email));
-    }
+    boolean existsByEmail(String email);
 
-    // Count
-    public long count() {
-        return doctors.size();
-    }
+    // Check if license number exists
+    boolean existsByLicenseNumber(String licenseNumber);
 
-    // Clear all (for testing)
-    public void deleteAll() {
-        doctors.clear();
-    }
+    // Count by specialization
+    long countBySpecialization(String specialization);
+
+    // Count active doctors
+    long countByActive(Boolean active);
+
+    // Delete by email
+    void deleteByEmail(String email);
+
+    // ============================================
+    // Custom JPQL Queries
+    // ============================================
+
+    // Find doctors by specialization (custom JPQL)
+    @Query("SELECT d FROM Doctor d WHERE d.specialization = :specialization AND d.active = true")
+    List<Doctor> findActiveDoctorsBySpecialization(@Param("specialization") String specialization);
+
+    // Search by name
+    @Query("SELECT d FROM Doctor d WHERE " +
+           "LOWER(d.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(d.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Doctor> searchByName(@Param("searchTerm") String searchTerm);
+
+    // Find top doctors by consultation fee
+    @Query("SELECT d FROM Doctor d WHERE d.active = true ORDER BY d.consultationFee DESC")
+    List<Doctor> findTopDoctorsByFee();
+
+    // Find doctors with experience range
+    @Query("SELECT d FROM Doctor d WHERE d.yearsOfExperience BETWEEN :minYears AND :maxYears")
+    List<Doctor> findByExperienceRange(@Param("minYears") Integer minYears,
+                                       @Param("maxYears") Integer maxYears);
+
+    // Get specialization list with count
+    @Query("SELECT d.specialization, COUNT(d) FROM Doctor d GROUP BY d.specialization")
+    List<Object[]> getSpecializationStatistics();
+
+    // ============================================
+    // Native SQL Queries
+    // ============================================
+
+    // Find doctors joined in specific year (Native SQL)
+    @Query(value = "SELECT * FROM doctors WHERE YEAR(joined_date) = :year",
+           nativeQuery = true)
+    List<Doctor> findDoctorsJoinedInYear(@Param("year") int year);
+
+    // Get average consultation fee by specialization
+    @Query(value = "SELECT specialization, AVG(consultation_fee) as avg_fee " +
+                   "FROM doctors " +
+                   "WHERE active = true " +
+                   "GROUP BY specialization",
+           nativeQuery = true)
+    List<Object[]> getAverageConsultationFeeBySpecialization();
+
+    // Find doctors with birthdays in current month
+    @Query(value = "SELECT * FROM doctors WHERE MONTH(date_of_birth) = MONTH(CURRENT_DATE)",
+           nativeQuery = true)
+    List<Doctor> findDoctorsWithBirthdayThisMonth();
 }

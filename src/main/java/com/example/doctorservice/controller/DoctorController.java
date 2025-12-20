@@ -1,82 +1,69 @@
 package com.example.doctorservice.controller;
 
-import com.example.doctorservice.config.AppProperties;
-import com.example.doctorservice.model.Doctor;
-import com.example.doctorservice.service.DoctorService;
-import com.example.doctorservice.service.EmailService;
-
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.doctorservice.entity.Doctor;
+import com.example.doctorservice.service.DoctorService;
+
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/doctors")
 public class DoctorController {
 
     private final DoctorService doctorService;
-    private final EmailService emailService;
-    private final AppProperties appProperties;
 
-    // Constructor Injection - Best Practice
     @Autowired
-    public DoctorController(EmailService emailService,
-            AppProperties appProperties,
-            DoctorService doctorService) {
-        this.emailService = emailService;
-        this.appProperties = appProperties;
+    public DoctorController(DoctorService doctorService) {
         this.doctorService = doctorService;
     }
 
-    // ==================== GET Methods ====================
+    // ============================================
+    // GET Endpoints
+    // ============================================
 
-    /**
-     * GET /api/doctors
-     * Get all doctors
-     */
-    // @GetMapping
-    // public ResponseEntity<List<Doctor>> getAllDoctors() {
-    // List<Doctor> doctors = doctorService.getAllDoctors();
-    // return ResponseEntity.ok(doctors);
-    // }
-    // produces: กำหนดว่า endpoint นี้ส่งข้อมูลประเภทไหนได้บ้าง
-        @GetMapping(produces = {
-            MediaType.APPLICATION_JSON_VALUE,
-            MediaType.APPLICATION_XML_VALUE
-        })
-        public ResponseEntity<Page<Doctor>> getAllDoctors(
-            @RequestParam(required = false) String specialization,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) String search,
+    @GetMapping
+    public ResponseEntity<List<Doctor>> getAllDoctors() {
+        List<Doctor> doctors = doctorService.getAllDoctors();
+        return ResponseEntity.ok(doctors);
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<Page<Doctor>> getAllDoctorsPaginated(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir
-        ) {
-        Page<Doctor> doctors = doctorService.getAllDoctors(specialization, active, search, page, size, sortBy, sortDir);
-        return ResponseEntity.ok(doctors);
-        }
+            @RequestParam(defaultValue = "asc") String sortDir) {
 
-    /**
-     * GET /api/doctors/{id}
-     * Get doctor by ID
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<Doctor> getDoctorById(@PathVariable Long id) {
-        return doctorService.getDoctorById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Doctor> doctors = doctorService.getAllDoctors(pageable);
+        return ResponseEntity.ok(doctors);
     }
 
-    /**
-     * GET /api/doctors/specialization/{specialization}
-     * Get doctors by specialization
-     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Doctor> getDoctorById(@PathVariable Long id) {
+        Doctor doctor = doctorService.getDoctorById(id);
+        return ResponseEntity.ok(doctor);
+    }
+
+    @GetMapping("/email/{email}")
+    public ResponseEntity<Doctor> getDoctorByEmail(@PathVariable String email) {
+        Doctor doctor = doctorService.getDoctorByEmail(email);
+        return ResponseEntity.ok(doctor);
+    }
+
     @GetMapping("/specialization/{specialization}")
     public ResponseEntity<List<Doctor>> getDoctorsBySpecialization(
             @PathVariable String specialization) {
@@ -84,128 +71,70 @@ public class DoctorController {
         return ResponseEntity.ok(doctors);
     }
 
-    /**
-     * GET /api/doctors/active
-     * Get only active doctors
-     */
     @GetMapping("/active")
     public ResponseEntity<List<Doctor>> getActiveDoctors() {
         List<Doctor> doctors = doctorService.getActiveDoctors();
         return ResponseEntity.ok(doctors);
     }
 
-    /**
-     * GET /api/doctors/search?name=john
-     * Search doctors by name (query parameter)
-     */
     @GetMapping("/search")
     public ResponseEntity<List<Doctor>> searchDoctors(
             @RequestParam String name) {
-        List<Doctor> doctors = doctorService.searchDoctors(name);
+        List<Doctor> doctors = doctorService.searchDoctorsByName(name);
         return ResponseEntity.ok(doctors);
     }
 
-    /**
-     * GET /api/doctors/count
-     * Get total count
-     */
     @GetMapping("/count")
-    public ResponseEntity<Map<String, Long>> getTotalCount() {
-        long count = doctorService.getTotalCount();
-        return ResponseEntity.ok(Map.of("totalDoctors", count));
+    public ResponseEntity<Long> getTotalCount() {
+        long count = doctorService.getTotalDoctorsCount();
+        return ResponseEntity.ok(count);
     }
 
-    // ==================== POST Methods ====================
+    // ============================================
+    // POST Endpoints
+    // ============================================
 
-    /**
-     * POST /api/doctors
-     * Create new doctor
-     */
-    // @PostMapping
-    // public ResponseEntity<Doctor> createDoctor(@RequestBody Doctor doctor) {
-    // try {
-    // Doctor createdDoctor = doctorService.createDoctor(doctor);
-    // return ResponseEntity.status(HttpStatus.CREATED).body(createdDoctor);
-    // } catch (IllegalArgumentException e) {
-    // return ResponseEntity.badRequest().build();
-    // }
-    // }
-    // consumes: กำหนดว่า endpoint นี้รับข้อมูลประเภทไหนได้บ้าง
-    @PostMapping(consumes = {
-            MediaType.APPLICATION_JSON_VALUE,
-            MediaType.APPLICATION_XML_VALUE
-    }, produces = {
-            MediaType.APPLICATION_JSON_VALUE,
-            MediaType.APPLICATION_XML_VALUE
-    })
-    public ResponseEntity<Doctor> createDoctor(@RequestBody Doctor doctor) {
-        Doctor created = doctorService.createDoctor(doctor);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    @PostMapping
+    public ResponseEntity<Doctor> createDoctor(@Valid @RequestBody Doctor doctor) {
+        Doctor createdDoctor = doctorService.createDoctor(doctor);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdDoctor);
     }
-    // ==================== PUT Methods ====================
 
-    /**
-     * PUT /api/doctors/{id}
-     * Update entire doctor (replace)
-     */
+    // ============================================
+    // PUT Endpoints
+    // ============================================
+
     @PutMapping("/{id}")
     public ResponseEntity<Doctor> updateDoctor(
             @PathVariable Long id,
-            @RequestBody Doctor doctor) {
-        try {
-            Doctor updatedDoctor = doctorService.updateDoctor(id, doctor);
-            return ResponseEntity.ok(updatedDoctor);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+            @Valid @RequestBody Doctor doctor) {
+        Doctor updatedDoctor = doctorService.updateDoctor(id, doctor);
+        return ResponseEntity.ok(updatedDoctor);
     }
 
-    // ==================== PATCH Methods ====================
+    // ============================================
+    // PATCH Endpoints
+    // ============================================
 
-    /**
-     * PATCH /api/doctors/{id}
-     * Partially update doctor
-     */
-    @PatchMapping("/{id}")
-    public ResponseEntity<Doctor> patchDoctor(
-            @PathVariable Long id,
-            @RequestBody Doctor doctor) {
-        try {
-            Doctor patchedDoctor = doctorService.patchDoctor(id, doctor);
-            return ResponseEntity.ok(patchedDoctor);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    /**
-     * PATCH /api/doctors/{id}/deactivate
-     * Soft delete (deactivate)
-     */
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Doctor> deactivateDoctor(@PathVariable Long id) {
-        try {
-            Doctor deactivatedDoctor = doctorService.deactivateDoctor(id);
-            return ResponseEntity.ok(deactivatedDoctor);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        Doctor doctor = doctorService.deactivateDoctor(id);
+        return ResponseEntity.ok(doctor);
     }
 
-    // ==================== DELETE Methods ====================
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<Doctor> activateDoctor(@PathVariable Long id) {
+        Doctor doctor = doctorService.activateDoctor(id);
+        return ResponseEntity.ok(doctor);
+    }
 
-    /**
-     * DELETE /api/doctors/{id}
-     * Delete doctor permanently
-     */
+    // ============================================
+    // DELETE Endpoints
+    // ============================================
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDoctor(@PathVariable Long id) {
-        try {
-            doctorService.deleteDoctor(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        doctorService.deleteDoctor(id);
+        return ResponseEntity.noContent().build();
     }
-
 }

@@ -32,10 +32,4 @@ public class TestController {
         config.put("emailHost", appProperties.getEmail().getHost());
         return config;
     }
-
-    @PostMapping("/register/{name}")
-    public String registerDoctor(@PathVariable String name) {
-        doctorService.registerDoctor(name);
-        return "Doctor " + name + " registered successfully!";
-    }
 }
