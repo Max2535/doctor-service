@@ -1,5 +1,6 @@
 package com.example.doctorservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -10,15 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "doctors",
-       uniqueConstraints = {
-           @UniqueConstraint(name = "uk_doctor_email", columnNames = "email"),
-           @UniqueConstraint(name = "uk_doctor_license", columnNames = "licenseNumber")
-       },
-       indexes = {
-           @Index(name = "idx_doctor_specialization", columnList = "specialization"),
-           @Index(name = "idx_doctor_active", columnList = "active")
-       })
+@Table(name = "doctors")
 public class Doctor {
 
     @Id
@@ -26,12 +19,12 @@ public class Doctor {
     private Long id;
 
     @NotBlank(message = "First name is required")
-    @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
+    @Size(min = 2, max = 50)
     @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;
 
     @NotBlank(message = "Last name is required")
-    @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
+    @Size(min = 2, max = 50)
     @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
@@ -74,6 +67,18 @@ public class Doctor {
     @Column(columnDefinition = "TEXT")
     private String biography;
 
+    // ============================================
+    // Many-to-One Relationship with Department
+    // ============================================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "department_id",              // Foreign key column name
+        referencedColumnName = "id",         // Primary key in Department
+        foreignKey = @ForeignKey(name = "fk_doctor_department")
+    )
+    @JsonBackReference  // ป้องกัน infinite recursion
+    private Department department;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -110,7 +115,6 @@ public class Doctor {
         return null;
     }
 
-    // PrePersist and PreUpdate callbacks
     @PrePersist
     protected void onCreate() {
         if (joinedDate == null) {
@@ -121,135 +125,65 @@ public class Doctor {
         }
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    // Getters and Setters (รวม department)
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
 
-    public String getFirstName() {
-        return firstName;
-    }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+    public String getSpecialization() { return specialization; }
+    public void setSpecialization(String specialization) { this.specialization = specialization; }
 
-    public String getLastName() {
-        return lastName;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public String getSpecialization() {
-        return specialization;
-    }
+    public String getLicenseNumber() { return licenseNumber; }
+    public void setLicenseNumber(String licenseNumber) { this.licenseNumber = licenseNumber; }
 
-    public void setSpecialization(String specialization) {
-        this.specialization = specialization;
-    }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 
-    public String getEmail() {
-        return email;
-    }
+    public LocalDate getJoinedDate() { return joinedDate; }
+    public void setJoinedDate(LocalDate joinedDate) { this.joinedDate = joinedDate; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getLicenseNumber() {
-        return licenseNumber;
-    }
-
-    public void setLicenseNumber(String licenseNumber) {
-        this.licenseNumber = licenseNumber;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public LocalDate getJoinedDate() {
-        return joinedDate;
-    }
-
-    public void setJoinedDate(LocalDate joinedDate) {
-        this.joinedDate = joinedDate;
-    }
-
-    public Integer getYearsOfExperience() {
-        return yearsOfExperience;
-    }
-
+    public Integer getYearsOfExperience() { return yearsOfExperience; }
     public void setYearsOfExperience(Integer yearsOfExperience) {
         this.yearsOfExperience = yearsOfExperience;
     }
 
-    public Double getConsultationFee() {
-        return consultationFee;
-    }
-
+    public Double getConsultationFee() { return consultationFee; }
     public void setConsultationFee(Double consultationFee) {
         this.consultationFee = consultationFee;
     }
 
-    public Boolean getActive() {
-        return active;
-    }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
 
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
+    public String getBiography() { return biography; }
+    public void setBiography(String biography) { this.biography = biography; }
 
-    public String getBiography() {
-        return biography;
-    }
+    public Department getDepartment() { return department; }
+    public void setDepartment(Department department) { this.department = department; }
 
-    public void setBiography(String biography) {
-        this.biography = biography;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    // equals, hashCode, toString
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Doctor doctor = (Doctor) o;
-        return Objects.equals(id, doctor.id) &&
-               Objects.equals(email, doctor.email);
+        return Objects.equals(id, doctor.id) && Objects.equals(email, doctor.email);
     }
 
     @Override
@@ -265,6 +199,7 @@ public class Doctor {
                 ", lastName='" + lastName + '\'' +
                 ", specialization='" + specialization + '\'' +
                 ", email='" + email + '\'' +
+                ", departmentId=" + (department != null ? department.getId() : null) +
                 ", active=" + active +
                 '}';
     }

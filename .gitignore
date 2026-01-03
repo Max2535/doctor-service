@@ -31,3 +31,4 @@ build/
 
 ### VS Code ###
 .vscode/
+logs/hospital-management-system.log

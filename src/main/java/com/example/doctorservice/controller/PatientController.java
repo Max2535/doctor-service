@@ -1,18 +1,12 @@
 package com.example.doctorservice.controller;
 
-import com.example.doctorservice.dto.ApiResponse;
-import com.example.doctorservice.dto.CreatePatientRequest;
-import com.example.doctorservice.dto.PatientDTO;
-import com.example.doctorservice.mapper.PatientMapper;
-import com.example.doctorservice.model.Patient;
+import com.example.doctorservice.entity.Patient;
 import com.example.doctorservice.service.PatientService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 
 import java.util.List;
 
@@ -21,96 +15,96 @@ import java.util.List;
 public class PatientController {
 
     private final PatientService patientService;
-    private final PatientMapper patientMapper;
 
     @Autowired
-    public PatientController(PatientService patientService, PatientMapper patientMapper) {
+    public PatientController(PatientService patientService) {
         this.patientService = patientService;
-        this.patientMapper = patientMapper;
     }
 
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<Page<PatientDTO>>> getAllPatients(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir
-    ) {
-        Page<Patient> patients = patientService.getAllPatients(page, size, sortBy, sortDir);
-        List<PatientDTO> dtoContent = patientMapper.toDTOList(patients.getContent());
-        Page<PatientDTO> dtoPage = new PageImpl<>(dtoContent, patients.getPageable(), patients.getTotalElements());
-        return ResponseEntity.ok(ApiResponse.success("Success", dtoPage));
+    // GET all patients
+    @GetMapping
+    public ResponseEntity<List<Patient>> getAllPatients() {
+        List<Patient> patients = patientService.getAllPatients();
+        return ResponseEntity.ok(patients);
     }
 
-    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<PatientDTO>> getPatientById(@PathVariable Long id) {
-        Patient p = patientService.getPatientById(id);
-        if (p == null) return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("Patient not found"));
-        return ResponseEntity.ok(ApiResponse.success(patientMapper.toDTO(p)));
+    // GET patient by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Patient> getPatientById(@PathVariable Long id) {
+        Patient patient = patientService.getPatientById(id);
+        return ResponseEntity.ok(patient);
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<PatientDTO>> createPatient(@RequestBody CreatePatientRequest req) {
-        try {
-            Patient p = patientMapper.toEntity(req);
-            Patient created = patientService.createPatient(p);
-            PatientDTO dto = patientMapper.toDTO(created);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("Patient created", dto));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to create patient"));
-        }
+    // GET patient by email
+    @GetMapping("/email/{email}")
+    public ResponseEntity<Patient> getPatientByEmail(@PathVariable String email) {
+        Patient patient = patientService.getPatientByEmail(email);
+        return ResponseEntity.ok(patient);
     }
 
-    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<PatientDTO>> updatePatient(@PathVariable Long id,
-                                                                 @RequestBody CreatePatientRequest req) {
-        try {
-            Patient p = patientMapper.toEntity(req);
-            Patient updated = patientService.updatePatient(id, p);
-            return ResponseEntity.ok(ApiResponse.success("Patient updated", patientMapper.toDTO(updated)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-        }
+    // GET active patients
+    @GetMapping("/active")
+    public ResponseEntity<List<Patient>> getActivePatients() {
+        List<Patient> patients = patientService.getActivePatients();
+        return ResponseEntity.ok(patients);
     }
 
-    @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<PatientDTO>> patchPatient(@PathVariable Long id,
-                                                                @RequestBody CreatePatientRequest req) {
-        try {
-            Patient p = patientMapper.toEntity(req);
-            Patient patched = patientService.patchPatient(id, p);
-            return ResponseEntity.ok(ApiResponse.success("Patient patched", patientMapper.toDTO(patched)));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-        }
+    // SEARCH patients
+    @GetMapping("/search")
+    public ResponseEntity<List<Patient>> searchPatients(@RequestParam String name) {
+        List<Patient> patients = patientService.searchPatientsByName(name);
+        return ResponseEntity.ok(patients);
     }
 
-    @DeleteMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<Void>> deletePatient(@PathVariable Long id) {
-        try {
-            patientService.deletePatient(id);
-            return ResponseEntity.ok(ApiResponse.success("Patient deleted", null));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-        }
+    // GET by blood group
+    @GetMapping("/blood-group/{bloodGroup}")
+    public ResponseEntity<List<Patient>> getPatientsByBloodGroup(
+            @PathVariable String bloodGroup) {
+        List<Patient> patients = patientService.getPatientsByBloodGroup(bloodGroup);
+        return ResponseEntity.ok(patients);
     }
 
-    @GetMapping(value = "/count", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<Long>> getTotalCount() {
-        long c = patientService.getTotalCount();
-        return ResponseEntity.ok(ApiResponse.success("Success", c));
+    // POST create patient
+    @PostMapping
+    public ResponseEntity<Patient> createPatient(@Valid @RequestBody Patient patient) {
+        Patient createdPatient = patientService.createPatient(patient);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdPatient);
     }
 
-    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<List<PatientDTO>>> searchPatients(@RequestParam String name) {
-        List<PatientDTO> dtos = patientMapper.toDTOList(patientService.searchPatients(name));
-        return ResponseEntity.ok(ApiResponse.success(dtos));
+    // PUT update patient
+    @PutMapping("/{id}")
+    public ResponseEntity<Patient> updatePatient(
+            @PathVariable Long id,
+            @Valid @RequestBody Patient patient) {
+        Patient updatedPatient = patientService.updatePatient(id, patient);
+        return ResponseEntity.ok(updatedPatient);
+    }
+
+    // PATCH deactivate
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<Patient> deactivatePatient(@PathVariable Long id) {
+        Patient patient = patientService.deactivatePatient(id);
+        return ResponseEntity.ok(patient);
+    }
+
+    // PATCH activate
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<Patient> activatePatient(@PathVariable Long id) {
+        Patient patient = patientService.activatePatient(id);
+        return ResponseEntity.ok(patient);
+    }
+
+    // DELETE patient
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
+        patientService.deletePatient(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // GET count
+    @GetMapping("/count")
+    public ResponseEntity<Long> getTotalCount() {
+        long count = patientService.getTotalPatientsCount();
+        return ResponseEntity.ok(count);
     }
 }
